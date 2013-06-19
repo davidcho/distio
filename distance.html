@@ -1,0 +1,155 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Calculating Driving Distance</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <script src="http://maps.google.com/maps?file=api&v=2&key=ABQIAAAA7j_Q-rshuWkc8HyFI4V2HxQYPm-xtd00hTQOC0OXpAMO40FHAxT29dNBGfxqMPq5zwdeiDSHEPL89A" type="text/javascript"></script>
+    <script src="js/jquery-1.8.2.js"></script>
+    <script type="text/javascript">
+
+    var geocoder, location1, location2, gDir;
+
+    function initialize() {
+        geocoder = new GClientGeocoder();
+        gDir = new GDirections();
+        GEvent.addListener(gDir, "load", function() {
+            var drivingDistanceMiles = (gDir.getDistance().meters / 1609.344).toFixed(1);
+            var drivingDistanceKilometers = (gDir.getDistance().meters / 1000).toFixed(1);
+            document.getElementById('results').innerHTML = '<strong>Starting: </strong>' + location1.address + '<br /><strong>Destination: </strong>' + location2.address + '<br /><strong>Driving Distance: </strong>' + drivingDistanceMiles + ' miles (or ' + drivingDistanceKilometers + ' kilometers)';
+        });
+    }
+
+    function showLocation() {
+        // if (document.forms[0].address1.value == 'Address 1' || document.forms[0].address1.value == '')
+        //     document.forms[0].address1.value = '851 56th St 11220';
+        // if (document.forms[0].address2.value == 'Address 2' || document.forms[0].address2.value == '')
+        //     document.forms[0].address2.value = '208 Dryden 14850';
+
+        geocoder.getLocations(document.forms[0].address1.value, function (response) {
+            if (!response || response.Status.code != 200) {
+                toError('#group1', '#starting', 'Invalid starting location');
+            } else {
+                location1 = {lat: response.Placemark[0].Point.coordinates[1], lon: response.Placemark[0].Point.coordinates[0], address: response.Placemark[0].address};
+                
+                geocoder.getLocations(document.forms[0].address2.value, function (response) {
+                    if (!response || response.Status.code != 200) {
+                        toError('#group2', '#destination', 'Invalid destination');
+                    } else {
+                        location2 = {lat: response.Placemark[0].Point.coordinates[1], lon: response.Placemark[0].Point.coordinates[0], address: response.Placemark[0].address};
+                        gDir.load('from: ' + location1.address + ' to: ' + location2.address);
+                    }
+                });
+            }
+        });
+    }
+
+    function inspect() {
+        var value1 = document.forms[0].address1.value;
+        var value2 = document.forms[0].address2.value;
+        var error = false;
+
+        if (value1 == 'Address 1' || value1 == '') {
+            toError('#group1', '#starting', 'Enter a starting location');
+            error = true;
+        } else if ($('#group1').hasClass("error")) {
+            toInfo('#group1', '#starting');
+        }
+        if (value2 == 'Address 2' || value1 == '') {
+            toError('#group2', '#destination', 'Enter a destination');
+            error = true;
+        } else if ($('#group2').hasClass("error")) {
+            toInfo('#group2', '#destination');
+        }
+        if (!error)
+            showLocation();
+    }
+
+    function toError(id, text_id, text) {
+        var $start = $(id);
+        $start.removeClass("info");
+        $start.addClass("error");
+        $(text_id).text(text);
+        $(text_id).show();
+    }
+
+    function toInfo(id, text_id) {
+        var $start = $(id);
+        $start.removeClass("error");
+        $start.addClass("info");
+
+        $(text_id).hide();
+    }
+
+    </script>
+
+    <style>
+        #body {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+        #background {
+            position: fixed;
+            z-index: -1;
+            opacity: 0.3;
+            margin-top: -2%;
+            
+        }
+        #form {
+            margin-left: 27%;
+            padding-top: 12%;
+        }
+        span {
+            font-size: 20px;
+        }
+        span:hover {
+            cursor: default;
+        }
+        p {
+            padding-top: 8%;
+            color: #3a87ad;
+            line-height: 150%;
+            text-align: center;
+            text-shadow: 1px 1px 5px white;
+        }
+        #starting, #destination {
+            display: none;
+        }
+    </style>
+</head>
+
+<body onload="initialize()">
+    <div id="body">
+        <img src="map.jpg" id="background"/>
+
+        <div id="logo">
+
+        </div>
+
+        <form id="form" class="form-horizontal" action="#" onsubmit="inspect()">
+              <div class="control-group info" id="group1">
+                <label class="control-label" for="address1"><span>From</span></label>
+                <div class="controls">
+                  <input type="text" id="address1" value="Address 1" onfocus="if (this.value=='Address 1') this.value='';">
+                  <span class="help-inline" id="starting"></span>
+                </div>
+              </div>
+              <div class="control-group info" id="group2">
+                <label class="control-label" for="address2"><span>To</span></label>
+                <div class="controls">
+                  <input type="text" id="address2" value="Address 2" onfocus="if (this.value=='Address 2') this.value='';">
+                  <span class="help-inline" id="destination"></span>
+                </div>
+              </div>
+              <div class="control-group">
+                <div class="controls">
+                  <button type="submit" class="btn btn-primary">Calculate Distance</button>
+                </div>
+              </div>
+        </form>
+
+        <p id="results" class="lead info"></p>
+    </div>
+</body>
+
+</html>
